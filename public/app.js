@@ -2,6 +2,7 @@
 const regionSelect = document.getElementById("region-select");
 const categorySelect = document.getElementById("category-select");
 const countSelect = document.getElementById("count-select");
+const keywordInput = document.getElementById("keyword-input");
 const refreshBtn = document.getElementById("refresh-btn");
 const videoGrid = document.getElementById("video-grid");
 const loader = document.getElementById("loader");
@@ -97,6 +98,7 @@ async function fetchTrending() {
   const region = regionSelect.value;
   const category = categorySelect.value;
   const maxResults = countSelect.value;
+  const keyword = keywordInput.value.trim();
 
   videoGrid.innerHTML = "";
   showError(null);
@@ -105,13 +107,21 @@ async function fetchTrending() {
   refreshBtn.classList.add("loading");
 
   try {
-    const res = await fetch(
-      `/api/trending?region=${region}&category=${category}&maxResults=${maxResults}`
-    );
+    let url = `/api/trending?region=${region}&category=${category}&maxResults=${maxResults}`;
+    if (keyword) {
+      url += `&keyword=${encodeURIComponent(keyword)}`;
+    }
+
+    const res = await fetch(url);
     const data = await res.json();
 
     if (!res.ok) throw new Error(data.error || "Request failed");
-    if (!data.videos?.length) throw new Error("No trending videos found for this region/category.");
+    if (!data.videos?.length) {
+      const msg = keyword 
+        ? `No videos found for "${keyword}". Try different keywords.`
+        : "No trending videos found for this region/category.";
+      throw new Error(msg);
+    }
 
     currentVideos = data.videos;
     renderGrid(currentVideos);
@@ -220,6 +230,11 @@ document.addEventListener("keydown", (e) => {
 });
 
 refreshBtn.addEventListener("click", fetchTrending);
+
+// Trigger search on Enter key in keyword input
+keywordInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") fetchTrending();
+});
 
 regionSelect.addEventListener("change", () => {
   loadCategories();

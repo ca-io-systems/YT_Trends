@@ -17,13 +17,23 @@
         <svg class="logo__icon" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><polygon points="11,4 11,16 21,10" fill="#fff"/></svg>
         <span class="logo__text">YT Trends</span>
       </div>
-      <p class="header__tagline">Real-time YouTube trending videos</p>
+      <p class="header__tagline">Content inspiration for creators – Powered by YouTube Trends</p>
     </div>
   </header>
 
   <!-- Controls -->
   <section class="controls">
     <div class="controls__inner">
+      <div class="control-group control-group--wide">
+        <label for="keyword-input">🔍 Search Keywords</label>
+        <input 
+          type="text" 
+          id="keyword-input" 
+          placeholder="e.g., AI, coding, fitness, gaming..."
+          autocomplete="off"
+        />
+      </div>
+
       <div class="control-group">
         <label for="region-select">Region</label>
         <select id="region-select">
@@ -64,7 +74,7 @@
 
       <button id="refresh-btn" class="btn btn--primary" title="Refresh">
         <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Refresh
+        Search
       </button>
     </div>
   </section>

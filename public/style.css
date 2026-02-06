@@ -102,12 +102,41 @@ a {
   gap: 0.3rem;
 }
 
+.control-group--wide {
+  flex: 1;
+  min-width: 250px;
+}
+
 .control-group label {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
+}
+
+input[type="text"] {
+  appearance: none;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.75rem;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color var(--transition);
+  width: 100%;
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+input[type="text"]:hover,
+input[type="text"]:focus {
+  border-color: var(--accent);
 }
 
 select {
