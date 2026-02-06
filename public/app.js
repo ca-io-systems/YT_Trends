@@ -2,6 +2,7 @@
 const regionSelect = document.getElementById("region-select");
 const categorySelect = document.getElementById("category-select");
 const countSelect = document.getElementById("count-select");
+const durationSelect = document.getElementById("duration-select");
 const keywordInput = document.getElementById("keyword-input");
 const refreshBtn = document.getElementById("refresh-btn");
 const videoGrid = document.getElementById("video-grid");
@@ -98,6 +99,7 @@ async function fetchTrending() {
   const region = regionSelect.value;
   const category = categorySelect.value;
   const maxResults = countSelect.value;
+  const duration = durationSelect.value;
   const keyword = keywordInput.value.trim();
 
   videoGrid.innerHTML = "";
@@ -107,7 +109,7 @@ async function fetchTrending() {
   refreshBtn.classList.add("loading");
 
   try {
-    let url = `/api/trending?region=${region}&category=${category}&maxResults=${maxResults}`;
+    let url = `/api/trending?region=${region}&category=${category}&maxResults=${maxResults}&duration=${duration}`;
     if (keyword) {
       url += `&keyword=${encodeURIComponent(keyword)}`;
     }
@@ -243,6 +245,7 @@ regionSelect.addEventListener("change", () => {
 
 categorySelect.addEventListener("change", fetchTrending);
 countSelect.addEventListener("change", fetchTrending);
+durationSelect.addEventListener("change", fetchTrending);
 
 // ── Init ──────────────────────────────────────────────
 loadCategories();

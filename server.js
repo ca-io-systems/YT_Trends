@@ -11,13 +11,14 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ---------- API Routes ----------
 
-// GET /api/trending?region=US&category=0&maxResults=20&keyword=AI
+// GET /api/trending?region=US&category=0&maxResults=20&keyword=AI&duration=all
 app.get("/api/trending", async (req, res) => {
   const {
     region = "US",
     category = "0",
     maxResults = "20",
     keyword = "",
+    duration = "all", // all, videos, shorts
   } = req.query;
 
   if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
@@ -99,6 +100,23 @@ app.get("/api/trending", async (req, res) => {
         categoryId: item.snippet.categoryId,
       }));
 
+      // Filter by duration (shorts vs videos)
+      if (duration === "shorts") {
+        videos = videos.filter(v => {
+          const match = v.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (!match) return false;
+          const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+          return totalSec <= 60;
+        });
+      } else if (duration === "videos") {
+        videos = videos.filter(v => {
+          const match = v.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (!match) return true; // include if can't parse
+          const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+          return totalSec > 60;
+        });
+      }
+
       res.json({ videos, totalResults: searchData.pageInfo?.totalResults || 0 });
     } else {
       // Default: use mostPopular chart
@@ -142,6 +160,23 @@ app.get("/api/trending", async (req, res) => {
         tags: item.snippet.tags || [],
         categoryId: item.snippet.categoryId,
       }));
+
+      // Filter by duration (shorts vs videos)
+      if (duration === "shorts") {
+        videos = videos.filter(v => {
+          const match = v.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (!match) return false;
+          const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+          return totalSec <= 60;
+        });
+      } else if (duration === "videos") {
+        videos = videos.filter(v => {
+          const match = v.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+          if (!match) return true; // include if can't parse
+          const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+          return totalSec > 60;
+        });
+      }
 
       res.json({ videos, totalResults: data.pageInfo?.totalResults || 0 });
     }
@@ -187,13 +222,14 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// GET /api/stats?region=US&keyword=AI&maxResults=50
+// GET /api/stats?region=US&keyword=AI&maxResults=50&duration=all
 // Fetches trending/search videos and extracts top tags, topics, channels
 app.get("/api/stats", async (req, res) => {
   const {
     region = "US",
     keyword = "",
     maxResults = "50",
+    duration = "all",
   } = req.query;
 
   if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
@@ -254,6 +290,27 @@ app.get("/api/stats", async (req, res) => {
         return res.status(resp.status).json({ error: data.error?.message || "API error" });
       }
       videoItems = data.items || [];
+    }
+
+    // Filter by duration
+    if (duration === "shorts") {
+      videoItems = videoItems.filter(item => {
+        const dur = item.contentDetails?.duration;
+        if (!dur) return false;
+        const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return false;
+        const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+        return totalSec <= 60;
+      });
+    } else if (duration === "videos") {
+      videoItems = videoItems.filter(item => {
+        const dur = item.contentDetails?.duration;
+        if (!dur) return true;
+        const match = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return true;
+        const totalSec = (parseInt(match[1] || 0) * 3600) + (parseInt(match[2] || 0) * 60) + parseInt(match[3] || 0);
+        return totalSec > 60;
+      });
     }
 
     // --- Extract analytics ---

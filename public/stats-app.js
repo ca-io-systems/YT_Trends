@@ -1,6 +1,7 @@
 // ── DOM Refs ──────────────────────────────────────────
 const keywordInput = document.getElementById("keyword-input");
 const regionSelect = document.getElementById("region-select");
+const durationSelect = document.getElementById("duration-select");
 const analyzeBtn = document.getElementById("analyze-btn");
 const loader = document.getElementById("loader");
 const errorBanner = document.getElementById("error");
@@ -41,6 +42,7 @@ function showError(msg) {
 async function fetchStats() {
   const keyword = keywordInput.value.trim();
   const region = regionSelect.value;
+  const duration = durationSelect.value;
 
   showError(null);
   showLoader(true);
@@ -48,7 +50,7 @@ async function fetchStats() {
   analyzeBtn.classList.add("loading");
 
   try {
-    let url = `/api/stats?region=${region}&maxResults=50`;
+    let url = `/api/stats?region=${region}&maxResults=50&duration=${duration}`;
     if (keyword) {
       url += `&keyword=${encodeURIComponent(keyword)}`;
     }
