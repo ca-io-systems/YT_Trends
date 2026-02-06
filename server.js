@@ -5,6 +5,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.YOUTUBE_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -430,6 +431,89 @@ app.get("/api/stats", async (req, res) => {
 // Serve stats page
 app.get("/stats", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "stats.html"));
+});
+
+// POST /api/analyze – AI-powered topic analysis via OpenRouter (Gemini 3 Flash)
+app.use(express.json());
+app.post("/api/analyze", async (req, res) => {
+  const { keyword, region, tags, channels, topVideos, categories, totals } = req.body;
+
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: "OpenRouter API key not configured" });
+  }
+
+  // Build a detailed prompt from the data
+  const tagsList = (tags || []).slice(0, 20).map(t => `"${t.tag}" (${t.count}x)`).join(", ");
+  const channelsList = (channels || []).slice(0, 10).map(c => `${c.name} (${c.videos} videos, ${c.views.toLocaleString()} views)`).join("; ");
+  const videosList = (topVideos || []).slice(0, 10).map((v, i) => `${i+1}. "${v.title}" by ${v.channel} – ${v.views.toLocaleString()} views`).join("\n");
+  const catList = (categories || []).map(c => `${c.name} (${c.count} videos)`).join(", ");
+
+  const prompt = `You are a YouTube content strategist and trend analyst. Analyze the following trending data${keyword ? ` for the niche/domain: "${keyword}"` : " from YouTube's general trending page"} in the ${region || "US"} region.
+
+Here is the data:
+
+**Aggregate Stats:** ${totals?.videos || 0} videos analyzed, ${(totals?.views || 0).toLocaleString()} total views, ${(totals?.likes || 0).toLocaleString()} total likes, ${(totals?.comments || 0).toLocaleString()} total comments.
+
+**Top Tags/Keywords:** ${tagsList || "None found"}
+
+**Top Categories:** ${catList || "None found"}
+
+**Top Channels:** ${channelsList || "None found"}
+
+**Top 10 Videos:**
+${videosList || "None found"}
+
+Based on this data, provide a structured analysis with the following sections. Use concise bullet points:
+
+1. **🔥 Recurring Themes & Topics** — Identify the 5-8 main recurring topics/themes across these trending videos. For each, explain briefly why it's trending.
+
+2. **📂 Sub-Topics & Content Angles** — For each main topic above, list 2-3 specific sub-topics or content angles that a creator could use for their own videos.
+
+3. **💡 Content Opportunities** — Identify 3-5 content gaps or underserved angles that a creator could capitalize on right now.
+
+4. **📊 Format & Style Insights** — What formats (tutorials, reactions, listicles, vlogs, shorts, etc.) are dominating? What style patterns do you notice?
+
+5. **🎯 Actionable Recommendations** — Give 3-5 specific, actionable video ideas a creator could make today to ride these trends.
+
+Keep the response focused and practical. This is for a content creator looking for inspiration and competitive insights.`;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://yt-trends.vercel.app",
+        "X-Title": "YT Trends",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 2000,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("OpenRouter error:", JSON.stringify(data));
+      return res.status(response.status).json({
+        error: data.error?.message || "AI analysis failed",
+      });
+    }
+
+    const analysis = data.choices?.[0]?.message?.content || "No analysis generated.";
+    res.json({ analysis });
+  } catch (err) {
+    console.error("Error calling OpenRouter:", err);
+    res.status(500).json({ error: "Failed to generate AI analysis" });
+  }
 });
 
 // SPA fallback

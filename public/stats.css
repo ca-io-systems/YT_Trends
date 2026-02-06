@@ -350,6 +350,109 @@
   margin-bottom: 0.5rem;
 }
 
+/* ===== AI Analysis Panel ===== */
+.insight-panel--ai {
+  border-color: rgba(255, 0, 0, 0.2);
+  background: linear-gradient(135deg, var(--surface) 0%, rgba(255, 0, 0, 0.03) 100%);
+}
+
+.ai-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, #4285f4, #ea4335);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 0.5rem;
+}
+
+.ai-analysis__placeholder {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-secondary);
+}
+
+.ai-analysis__placeholder-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.ai-analysis__placeholder p {
+  font-size: 0.88rem;
+}
+
+.ai-analysis__loading {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-secondary);
+}
+
+.ai-analysis__loading-spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 1rem;
+  border: 3px solid var(--border);
+  border-top-color: #4285f4;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.ai-analysis__loading p {
+  font-size: 0.88rem;
+}
+
+.ai-analysis__content {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.ai-analysis__content h2,
+.ai-analysis__content h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.ai-analysis__content h2:first-child,
+.ai-analysis__content h3:first-child {
+  margin-top: 0;
+}
+
+.ai-analysis__content p {
+  margin-bottom: 0.5rem;
+}
+
+.ai-analysis__content ul,
+.ai-analysis__content ol {
+  margin: 0.4rem 0 0.75rem 1.25rem;
+}
+
+.ai-analysis__content li {
+  margin-bottom: 0.3rem;
+}
+
+.ai-analysis__content strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ai-analysis__content em {
+  color: var(--text-secondary);
+}
+
+.ai-analysis__content code {
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.82rem;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .insights-grid {

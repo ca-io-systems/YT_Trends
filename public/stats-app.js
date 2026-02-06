@@ -38,7 +38,44 @@ function showError(msg) {
   }
 }
 
+// ── Lightweight Markdown → HTML ───────────────────────
+function markdownToHtml(md) {
+  return md
+    // Headers
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h2>$1</h2>")
+    // Bold + Italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    // Inline code
+    .replace(/`(.+?)`/g, "<code>$1</code>")
+    // Unordered lists (— or - or *)
+    .replace(/^[\s]*[-—*]\s+(.+)$/gm, "<li>$1</li>")
+    // Ordered lists
+    .replace(/^\d+\.\s+(.+)$/gm, "<li>$1</li>")
+    // Wrap consecutive <li> in <ul>
+    .replace(/((?:<li>.*<\/li>\n?)+)/g, "<ul>$1</ul>")
+    // Paragraphs (double newlines)
+    .replace(/\n{2,}/g, "</p><p>")
+    // Single newlines → <br> (within paragraphs)
+    .replace(/\n/g, "<br>")
+    // Wrap in <p>
+    .replace(/^/, "<p>")
+    .replace(/$/, "</p>")
+    // Cleanup
+    .replace(/<p><\/p>/g, "")
+    .replace(/<p>(<h[23]>)/g, "$1")
+    .replace(/(<\/h[23]>)<\/p>/g, "$1")
+    .replace(/<p>(<ul>)/g, "$1")
+    .replace(/(<\/ul>)<\/p>/g, "$1")
+    .replace(/<br><\/p>/g, "</p>");
+}
+
 // ── Fetch & Render Stats ──────────────────────────────
+let lastStatsData = null;
+
 async function fetchStats() {
   const keyword = keywordInput.value.trim();
   const region = regionSelect.value;
@@ -60,6 +97,8 @@ async function fetchStats() {
 
     if (!res.ok) throw new Error(data.error || "Request failed");
 
+    lastStatsData = { ...data, keyword, region };
+
     renderOverview(data.totals);
     renderTags(data.tags);
     renderCategories(data.categories);
@@ -67,11 +106,62 @@ async function fetchStats() {
     renderTopVideos(data.topVideos);
 
     statsPage.style.display = "block";
+
+    // Auto-trigger AI analysis
+    fetchAiAnalysis();
   } catch (err) {
     showError(err.message);
   } finally {
     showLoader(false);
     analyzeBtn.classList.remove("loading");
+  }
+}
+
+// ── AI Analysis ───────────────────────────────────────
+async function fetchAiAnalysis() {
+  const container = document.getElementById("ai-analysis");
+
+  if (!lastStatsData) {
+    container.innerHTML = `
+      <div class="ai-analysis__placeholder">
+        <span class="ai-analysis__placeholder-icon">✨</span>
+        <p>No data to analyze yet</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="ai-analysis__loading">
+      <div class="ai-analysis__loading-spinner"></div>
+      <p>AI is analyzing trending topics…</p>
+    </div>`;
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        keyword: lastStatsData.keyword,
+        region: lastStatsData.region,
+        tags: lastStatsData.tags,
+        channels: lastStatsData.channels,
+        topVideos: lastStatsData.topVideos,
+        categories: lastStatsData.categories,
+        totals: lastStatsData.totals,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "AI analysis failed");
+
+    container.innerHTML = `<div class="ai-analysis__content">${markdownToHtml(data.analysis)}</div>`;
+  } catch (err) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">⚠️</div>
+        <p>AI analysis failed: ${err.message}</p>
+      </div>`;
   }
 }
 
