@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Trends – Stats &amp; Insights</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="stats.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="logo">
+        <svg class="logo__icon" viewBox="0 0 28 20" fill="none"><rect width="28" height="20" rx="4" fill="#FF0000"/><polygon points="11,4 11,16 21,10" fill="#fff"/></svg>
+        <span class="logo__text">YT Trends</span>
+      </div>
+      <nav class="header__nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/stats" class="nav-link nav-link--active">Stats &amp; Insights</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Controls -->
+  <section class="controls">
+    <div class="controls__inner">
+      <div class="control-group control-group--wide">
+        <label for="keyword-input">🔍 Domain / Keyword</label>
+        <input
+          type="text"
+          id="keyword-input"
+          placeholder="e.g., AI, coding tutorials, fitness, gaming..."
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="control-group">
+        <label for="region-select">Region</label>
+        <select id="region-select">
+          <option value="US">🇺🇸 United States</option>
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="IN">🇮🇳 India</option>
+          <option value="CA">🇨🇦 Canada</option>
+          <option value="AU">🇦🇺 Australia</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="JP">🇯🇵 Japan</option>
+          <option value="BR">🇧🇷 Brazil</option>
+          <option value="KR">🇰🇷 South Korea</option>
+          <option value="MX">🇲🇽 Mexico</option>
+          <option value="RU">🇷🇺 Russia</option>
+          <option value="SA">🇸🇦 Saudi Arabia</option>
+          <option value="PK">🇵🇰 Pakistan</option>
+          <option value="AE">🇦🇪 UAE</option>
+        </select>
+      </div>
+
+      <button id="analyze-btn" class="btn btn--primary" title="Analyze">
+        <svg class="btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        Analyze
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading / Error -->
+  <div id="loader" class="loader" style="display:none">
+    <div class="spinner"></div>
+    <p>Analyzing trends…</p>
+  </div>
+  <div id="error" class="error-banner" style="display:none"></div>
+
+  <!-- Stats Content -->
+  <main class="stats-page" id="stats-page" style="display:none">
+
+    <!-- Overview Cards -->
+    <section class="overview">
+      <div class="overview__card">
+        <span class="overview__icon">📊</span>
+        <span class="overview__value" id="ov-videos">0</span>
+        <span class="overview__label">Videos Analyzed</span>
+      </div>
+      <div class="overview__card">
+        <span class="overview__icon">👁️</span>
+        <span class="overview__value" id="ov-views">0</span>
+        <span class="overview__label">Total Views</span>
+      </div>
+      <div class="overview__card">
+        <span class="overview__icon">👍</span>
+        <span class="overview__value" id="ov-likes">0</span>
+        <span class="overview__label">Total Likes</span>
+      </div>
+      <div class="overview__card">
+        <span class="overview__icon">💬</span>
+        <span class="overview__value" id="ov-comments">0</span>
+        <span class="overview__label">Total Comments</span>
+      </div>
+    </section>
+
+    <!-- Two-column layout -->
+    <div class="insights-grid">
+
+      <!-- Top Tags / Keywords -->
+      <section class="insight-panel">
+        <h2 class="insight-panel__title">
+          <span class="insight-panel__icon">🏷️</span>
+          Top Trending Tags &amp; Keywords
+        </h2>
+        <p class="insight-panel__subtitle">Most used tags across trending videos</p>
+        <div id="tags-list" class="tags-cloud"></div>
+      </section>
+
+      <!-- Top Categories -->
+      <section class="insight-panel">
+        <h2 class="insight-panel__title">
+          <span class="insight-panel__icon">📁</span>
+          Top Categories
+        </h2>
+        <p class="insight-panel__subtitle">Most popular content categories</p>
+        <div id="categories-list" class="bar-list"></div>
+      </section>
+
+      <!-- Top Channels -->
+      <section class="insight-panel insight-panel--full">
+        <h2 class="insight-panel__title">
+          <span class="insight-panel__icon">📺</span>
+          Top Channels
+        </h2>
+        <p class="insight-panel__subtitle">Dominating the trending page by views</p>
+        <div id="channels-list" class="channels-grid"></div>
+      </section>
+
+      <!-- Top Videos Table -->
+      <section class="insight-panel insight-panel--full">
+        <h2 class="insight-panel__title">
+          <span class="insight-panel__icon">🔥</span>
+          Top 10 Videos
+        </h2>
+        <p class="insight-panel__subtitle">Highest performing videos by view count</p>
+        <div id="videos-table" class="videos-table"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Built with the <a href="https://developers.google.com/youtube/v3" target="_blank" rel="noopener">YouTube Data API v3</a></p>
+  </footer>
+
+  <script src="stats-app.js"></script>
+</body>
+</html>

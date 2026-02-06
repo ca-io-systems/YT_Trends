@@ -187,6 +187,194 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
+// GET /api/stats?region=US&keyword=AI&maxResults=50
+// Fetches trending/search videos and extracts top tags, topics, channels
+app.get("/api/stats", async (req, res) => {
+  const {
+    region = "US",
+    keyword = "",
+    maxResults = "50",
+  } = req.query;
+
+  if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    return res.status(500).json({ error: "API key not configured" });
+  }
+
+  try {
+    let videoItems = [];
+
+    if (keyword && keyword.trim()) {
+      // Search by keyword
+      const searchParams = new URLSearchParams({
+        part: "snippet",
+        q: keyword.trim(),
+        type: "video",
+        maxResults: Math.min(Number(maxResults), 50),
+        regionCode: region,
+        order: "viewCount",
+        key: API_KEY,
+      });
+
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?${searchParams}`;
+      const searchResp = await fetch(searchUrl);
+      const searchData = await searchResp.json();
+      if (!searchResp.ok) {
+        return res.status(searchResp.status).json({ error: searchData.error?.message || "API error" });
+      }
+
+      const videoIds = (searchData.items || []).map((i) => i.id.videoId).filter(Boolean);
+      if (videoIds.length === 0) {
+        return res.json({ tags: [], channels: [], categories: [], totals: {}, topVideos: [] });
+      }
+
+      const vidParams = new URLSearchParams({
+        part: "snippet,statistics,contentDetails,topicDetails",
+        id: videoIds.join(","),
+        key: API_KEY,
+      });
+      const vidResp = await fetch(`https://www.googleapis.com/youtube/v3/videos?${vidParams}`);
+      const vidData = await vidResp.json();
+      if (!vidResp.ok) {
+        return res.status(vidResp.status).json({ error: vidData.error?.message || "API error" });
+      }
+      videoItems = vidData.items || [];
+    } else {
+      // Trending videos
+      const params = new URLSearchParams({
+        part: "snippet,statistics,contentDetails,topicDetails",
+        chart: "mostPopular",
+        regionCode: region,
+        maxResults: Math.min(Number(maxResults), 50),
+        key: API_KEY,
+      });
+
+      const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?${params}`);
+      const data = await resp.json();
+      if (!resp.ok) {
+        return res.status(resp.status).json({ error: data.error?.message || "API error" });
+      }
+      videoItems = data.items || [];
+    }
+
+    // --- Extract analytics ---
+    const tagCount = {};
+    const channelMap = {};
+    const categoryCount = {};
+    let totalViews = 0;
+    let totalLikes = 0;
+    let totalComments = 0;
+
+    const topVideos = [];
+
+    for (const item of videoItems) {
+      const views = Number(item.statistics?.viewCount || 0);
+      const likes = Number(item.statistics?.likeCount || 0);
+      const comments = Number(item.statistics?.commentCount || 0);
+      totalViews += views;
+      totalLikes += likes;
+      totalComments += comments;
+
+      // Tags
+      const tags = item.snippet?.tags || [];
+      for (const tag of tags) {
+        const lower = tag.toLowerCase();
+        tagCount[lower] = (tagCount[lower] || 0) + 1;
+      }
+
+      // Channels
+      const chId = item.snippet?.channelId;
+      const chTitle = item.snippet?.channelTitle;
+      if (chId) {
+        if (!channelMap[chId]) {
+          channelMap[chId] = { name: chTitle, views: 0, videos: 0 };
+        }
+        channelMap[chId].views += views;
+        channelMap[chId].videos += 1;
+      }
+
+      // Category
+      const catId = item.snippet?.categoryId;
+      if (catId) {
+        categoryCount[catId] = (categoryCount[catId] || 0) + 1;
+      }
+
+      // Top videos by views
+      topVideos.push({
+        id: item.id,
+        title: item.snippet?.title,
+        channel: chTitle,
+        views,
+        likes,
+        comments,
+        thumbnail: item.snippet?.thumbnails?.medium?.url || "",
+        publishedAt: item.snippet?.publishedAt,
+        duration: item.contentDetails?.duration,
+      });
+    }
+
+    // Sort & limit
+    const sortedTags = Object.entries(tagCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([tag, count]) => ({ tag, count }));
+
+    const sortedChannels = Object.entries(channelMap)
+      .sort((a, b) => b[1].views - a[1].views)
+      .slice(0, 10)
+      .map(([id, data]) => ({ id, ...data }));
+
+    const sortedCategories = Object.entries(categoryCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([id, count]) => ({ id, count }));
+
+    topVideos.sort((a, b) => b.views - a.views);
+
+    // Fetch category names
+    const catParams = new URLSearchParams({
+      part: "snippet",
+      regionCode: region,
+      key: API_KEY,
+    });
+    let categoryNames = {};
+    try {
+      const catResp = await fetch(`https://www.googleapis.com/youtube/v3/videoCategories?${catParams}`);
+      const catData = await catResp.json();
+      if (catData.items) {
+        for (const c of catData.items) {
+          categoryNames[c.id] = c.snippet.title;
+        }
+      }
+    } catch { /* silently fail */ }
+
+    const categoriesWithNames = sortedCategories.map((c) => ({
+      ...c,
+      name: categoryNames[c.id] || `Category ${c.id}`,
+    }));
+
+    res.json({
+      tags: sortedTags,
+      channels: sortedChannels,
+      categories: categoriesWithNames,
+      topVideos: topVideos.slice(0, 10),
+      totals: {
+        videos: videoItems.length,
+        views: totalViews,
+        likes: totalLikes,
+        comments: totalComments,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+// Serve stats page
+app.get("/stats", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "stats.html"));
+});
+
 // SPA fallback
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
